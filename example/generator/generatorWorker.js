@@ -30,6 +30,17 @@
   };
 
   var subscriptions = {};
+  var activeTimeouts = {};
+  var lastKnownTimestamp = Date.now();
+
+  function getMonotonicTimestamp(targetTime) {
+    if (targetTime <= lastKnownTimestamp) {
+      lastKnownTimestamp += 1;
+    } else {
+      lastKnownTimestamp = targetTime;
+    }
+    return lastKnownTimestamp;
+  }
 
   function workSubscriptions(timestamp) {
     var now = Date.now();
@@ -51,14 +62,16 @@
 
   function onSubscribe(message) {
     var data = message.data;
-
-    // Keep
-    var start = Date.now();
     var step = 1000 / data.dataRateInHz;
-    var nextStep = start - (start % step) + step;
-    let work;
+    var currentPointTime = Date.now();
+
+    if (activeTimeouts[message.id]) {
+      clearTimeout(activeTimeouts[message.id]);
+    }
+
     if (data.spectra) {
-      work = function (now) {
+      var nextStep = currentPointTime - (currentPointTime % step) + step;
+      var work = function (now) {
         while (nextStep < now) {
           const messageCopy = Object.create(message);
           message.data.start = nextStep - 60 * 1000;
@@ -66,55 +79,59 @@
           onRequest(messageCopy);
           nextStep += step;
         }
-
         return nextStep;
       };
+      subscriptions[message.id] = work;
+      workSubscriptions();
     } else {
-      work = function (now) {
-        while (nextStep < now) {
-          self.postMessage({
-            id: message.id,
-            data: {
-              name: data.name,
-              utc: nextStep,
-              yesterday: nextStep - 60 * 60 * 24 * 1000,
-              sin: sin(
-                nextStep,
-                data.period,
-                data.amplitude,
-                data.offset,
-                data.phase,
-                data.randomness,
-                data.infinityValues,
-                data.exceedFloat32
-              ),
-              wavelengths: wavelengths(),
-              intensities: intensities(),
-              cos: cos(
-                nextStep,
-                data.period,
-                data.amplitude,
-                data.offset,
-                data.phase,
-                data.randomness,
-                data.infinityValues,
-                data.exceedFloat32
-              )
-            }
-          });
-          nextStep += step;
-        }
+      function streamLoop() {
+        var now = Date.now();
+        currentPointTime = getMonotonicTimestamp(Math.max(currentPointTime + 1, now));
 
-        return nextStep;
-      };
+        self.postMessage({
+          id: message.id,
+          data: {
+            name: data.name,
+            utc: currentPointTime,
+            yesterday: currentPointTime - 60 * 60 * 24 * 1000,
+            sin: sin(
+              currentPointTime,
+              data.period,
+              data.amplitude,
+              data.offset,
+              data.phase,
+              data.randomness,
+              data.infinityValues,
+              data.exceedFloat32
+            ),
+            wavelengths: wavelengths(),
+            intensities: intensities(),
+            cos: cos(
+              currentPointTime,
+              data.period,
+              data.amplitude,
+              data.offset,
+              data.phase,
+              data.randomness,
+              data.infinityValues,
+              data.exceedFloat32
+            )
+          }
+        });
+
+        activeTimeouts[message.id] = setTimeout(streamLoop, step);
+      }
+
+      streamLoop();
     }
-
-    subscriptions[message.id] = work;
-    workSubscriptions();
   }
 
   function onUnsubscribe(message) {
     delete subscriptions[message.data.id];
+    if (activeTimeouts[message.data.id]) {
+      clearTimeout(activeTimeouts[message.data.id]);
+      delete activeTimeouts[message.data.id];
+    }
   }
 
   function onRequest(message) {
@@ -142,20 +159,18 @@
     var data = [];
 
     if (request.strategy === 'minmax' && size) {
-      // Calculate the number of cycles to include based on size (2 points per cycle)
       var totalCycles = Math.min(Math.floor(size / 2), Math.floor(duration / period));
 
       for (let cycle = 0; cycle < totalCycles; cycle++) {
-        // Distribute cycles evenly across the time range
         let cycleStart = start + (duration / totalCycles) * cycle;
-        let minPointTime = cycleStart; // Assuming min at the start of the cycle
-        let maxPointTime = cycleStart + period / 2; // Assuming max at the halfway of the cycle
+        let minPointTime = getMonotonicTimestamp(cycleStart);
+        let maxPointTime = getMonotonicTimestamp(cycleStart + period / 2);
 
         data.push(createDataPoint(minPointTime, request), createDataPoint(maxPointTime, request));
       }
     } else {
       for (let i = 0; i < maxPoints && nextStep < end; i++, nextStep += step) {
-        data.push(createDataPoint(nextStep, request));
+        data.push(createDataPoint(getMonotonicTimestamp(nextStep), request));
       }
     }
 
@@ -273,7 +288,6 @@
     );
   }
 
-  // Values exceeding float32 range (Positive: 3.4+38, Negative: -3.4+38)
   function getRandomFloat32OverflowValue() {
     const sign = Math.random() > 0.5 ? 1 : -1;
 

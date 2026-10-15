@@ -90,6 +90,28 @@ import {
   toTick
 } from './tickUtils.js';
 
+function filterSmallPlotTicks(ticks, minSpacingPixels = 20) {
+  if (!ticks || ticks.length <= 2) {
+    return ticks;
+  }
+
+  const first = ticks[0];
+  const last = ticks[ticks.length - 1];
+
+  const midIndex = Math.floor(ticks.length / 2);
+  const middle = ticks[midIndex];
+
+  const overrunsLower = Math.abs(middle.position - first.position) < minSpacingPixels;
+  const overrunsUpper = Math.abs(last.position - middle.position) < minSpacingPixels;
+
+  if (overrunsLower || overrunsUpper) {
+    return [first, last];
+  }
+
+  return [first, middle, last];
+}
+
+
 export default {
   inject: ['openmct', 'domainObject', 'objectPath'],
   props: {
@@ -152,7 +174,26 @@ export default {
      * Minor ticks are gridlines only, so they are not given a label.
      */
     labelledTicks() {
-      return this.ticks.filter((tick) => !tick.minor);
+      const rawLabels = this.ticks.filter((tick) => !tick.minor);
+      
+      if (!rawLabels || rawLabels.length <= 2) {
+        return rawLabels;
+      }
+
+      const minSpacingPixels = 20;
+      const first = rawLabels[0];
+      const last = rawLabels[rawLabels.length - 1];
+      const midIndex = Math.floor(rawLabels.length / 2);
+      const middle = rawLabels[midIndex];
+
+      const overrunsLower = Math.abs(middle.position - first.position) < minSpacingPixels;
+      const overrunsUpper = Math.abs(last.position - middle.position) < minSpacingPixels;
+
+      if (overrunsLower || overrunsUpper) {
+        return [first, last];
+      }
+
+      return [first, middle, last];
     }
   },
   mounted() {

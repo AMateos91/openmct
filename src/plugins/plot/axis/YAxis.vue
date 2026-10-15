@@ -23,6 +23,7 @@
   <div
     v-if="loaded"
     class="gl-plot-axis-area gl-plot-y has-local-controls js-plot-y-axis"
+    :class="{ 'has-hide-y-small': hideYAxisWhenSmall }"
     :style="yAxisStyle"
   >
     <div class="gl-plot-label gl-plot-y-label">
@@ -119,7 +120,8 @@ export default {
       hasAdditionalYAxes: false,
       seriesColors: [],
       visible: true,
-      selfTickWidth: 0
+      selfTickWidth: 0,
+      hideYAxisWhenSmall: false
     };
   },
   computed: {
@@ -175,6 +177,11 @@ export default {
         }
 
         this.config = config;
+        this.hideYAxisWhenSmall = this.yAxis.get('hideYAxisWhenSmall') || false;
+        this.listenTo(this.yAxis, 'change:hideYAxisWhenSmall', (newValue) => {
+          this.hideYAxisWhenSmall = newValue;
+        }, this);
+
         this.listenTo(this.config.series, 'add', this.addSeries, this);
         this.listenTo(this.config.series, 'remove', this.seriesRemovedFromPlot, this);
         this.listenTo(this.config.series, 'reorder', this.addOrRemoveSeries, this);

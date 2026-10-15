@@ -22,6 +22,8 @@
 
 /***************** PLOTLY OVERRIDES */
 .plot-container.plotly {
+  min-height: unset !important;
+
   .bglayer .bg {
     fill: $colorPlotBg !important;
     fill-opacity: 1 !important;
@@ -68,6 +70,18 @@
     text {
       fill: $colorPlotFg !important;
       font-size: 12px !important;
+    }
+  }
+}
+
+.c-plot.--width-less-than-600 {
+  &.has-hide-y-small {
+    .plot-container.plotly {
+      .ytick, 
+      .yaxislayer, 
+      .main-svg .yaxis {
+        display: none !important;
+      }
     }
   }
 }
