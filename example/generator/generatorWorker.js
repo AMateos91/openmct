@@ -83,42 +83,45 @@
       workSubscriptions();
     } else {
       function workTelemetry(now) {
-        var monotonicTime = getMonotonicTimestamp(now);
+        while (nextStep < now) {
+          var monotonicTime = getMonotonicTimestamp(nextStep);
+          self.postMessage({
+            id: message.id,
+            data: {
+              name: data.name,
+              utc: monotonicTime,
+              yesterday: monotonicTime - 60 * 60 * 24 * 1000,
+              sin: sin(
+                monotonicTime,
+                data.period,
+                data.amplitude,
+                data.offset,
+                data.phase,
+                data.randomness,
+                data.infinityValues,
+                data.exceedFloat32
+              ),
+              wavelengths: wavelengths(),
+              intensities: intensities(),
+              cos: cos(
+                monotonicTime,
+                data.period,
+                data.amplitude,
+                data.offset,
+                data.phase,
+                data.randomness,
+                data.infinityValues,
+                data.exceedFloat32
+              )
+            }
+          });
 
-        self.postMessage({
-          id: message.id,
-          data: {
-            name: data.name,
-            utc: monotonicTime,
-            yesterday: monotonicTime - 60 * 60 * 24 * 1000,
-            sin: sin(
-              monotonicTime,
-              data.period || 60000,
-              data.amplitude || 1,
-              data.offset || 0,
-              data.phase || 0,
-              data.randomness || 0,
-              data.infinityValues,
-              data.exceedFloat32
-            ),
-            wavelengths: wavelengths(),
-            intensities: intensities(),
-            cos: cos(
-              monotonicTime,
-              data.period || 60000,
-              data.amplitude || 1,
-              data.offset || 0,
-              data.phase || 0,
-              data.randomness || 0,
-              data.infinityValues,
-              data.exceedFloat32
-            )
-          }
-        });
+          nextStep += step;
+        }
 
-        nextStep = now + step;
         return nextStep;
       }
+
       subscriptions[message.id] = workTelemetry;
       workSubscriptions();
     }
