@@ -36,7 +36,9 @@ export default class ViewRegistry extends EventEmitter {
   }
 
   get(item, objectPath) {
-    if (!item || !this.providers) {
+    // SECURITY BLOCK FOR TEARDOWN PHASE: If the core item is missing during the testing framework
+    // global cleanup phase, safely exit before filtering to prevent asynchronous crashing rejections.
+    if (!item) {
       return [];
     }
 
@@ -55,18 +57,11 @@ export default class ViewRegistry extends EventEmitter {
 
     return this.getAllProviders()
       .filter(function (provider) {
-        // CRITICAL PROTECTION: Catch asynchronous rejections when providers
-        // try to access destroyed core elements during test teardown.
+        // Only trigger provider check if the execution context is valid and functional
         if (!provider || typeof provider.canView !== 'function') {
           return false;
         }
-
-        try {
-          return provider.canView(item, objectPath);
-        } catch (error) {
-          // Quietly suppress unhandled type errors during destruction phase
-          return false;
-        }
+        return provider.canView(item, objectPath);
       })
       .sort(byPriority);
   }
