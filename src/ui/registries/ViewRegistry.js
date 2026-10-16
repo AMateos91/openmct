@@ -36,9 +36,7 @@ export default class ViewRegistry extends EventEmitter {
   }
 
   get(item, objectPath) {
-    // SECURITY BLOCK FOR TEARDOWN PHASE: If the core item is missing during the testing framework
-    // global cleanup phase, safely exit before filtering to prevent asynchronous crashing rejections.
-    if (!item) {
+    if (!item || !this.providers) {
       return [];
     }
 
@@ -57,7 +55,6 @@ export default class ViewRegistry extends EventEmitter {
 
     return this.getAllProviders()
       .filter(function (provider) {
-        // Only trigger provider check if the execution context is valid and functional
         if (!provider || typeof provider.canView !== 'function') {
           return false;
         }

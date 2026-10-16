@@ -83,46 +83,42 @@
       workSubscriptions();
     } else {
       function workTelemetry(now) {
-        // PROTECTION: Prevent CPU starvation and infinite loops inside headless CI servers
-        var maxIterations = 500;
-        var iterations = 0;
+        // REAL-TIME DYNAMIC ENGINE: Map telemetry directly to the actual system clock
+        // This eliminates the rigid vertical wall and creates a fluid moving sine wave
+        var monotonicTime = getMonotonicTimestamp(now);
 
-        while (nextStep < now && iterations < maxIterations) {
-          var monotonicTime = getMonotonicTimestamp(nextStep);
-          self.postMessage({
-            id: message.id,
-            data: {
-              name: data.name,
-              utc: monotonicTime,
-              yesterday: monotonicTime - 60 * 60 * 24 * 1000,
-              sin: sin(
-                monotonicTime,
-                data.period,
-                data.amplitude,
-                data.offset,
-                data.phase,
-                data.randomness,
-                data.infinityValues,
-                data.exceedFloat32
-              ),
-              wavelengths: wavelengths(),
-              intensities: intensities(),
-              cos: cos(
-                monotonicTime,
-                data.period,
-                data.amplitude,
-                data.offset,
-                data.phase,
-                data.randomness,
-                data.infinityValues,
-                data.exceedFloat32
-              )
-            }
-          });
-          nextStep += step;
-          iterations++;
-        }
+        self.postMessage({
+          id: message.id,
+          data: {
+            name: data.name,
+            utc: monotonicTime,
+            yesterday: monotonicTime - 60 * 60 * 24 * 1000,
+            sin: sin(
+              monotonicTime,
+              data.period || 60000,
+              data.amplitude || 1,
+              data.offset || 0,
+              data.phase || 0,
+              data.randomness || 0,
+              data.infinityValues,
+              data.exceedFloat32
+            ),
+            wavelengths: wavelengths(),
+            intensities: intensities(),
+            cos: cos(
+              monotonicTime,
+              data.period || 60000,
+              data.amplitude || 1,
+              data.offset || 0,
+              data.phase || 0,
+              data.randomness || 0,
+              data.infinityValues,
+              data.exceedFloat32
+            )
+          }
+        });
 
+        nextStep = now + step;
         return nextStep;
       }
 
