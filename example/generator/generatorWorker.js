@@ -392,5 +392,5 @@
     }
   }
 
-  self.addEventListener('message', handleMessage);
+  self.onmessage = handleMessage;
 })();
