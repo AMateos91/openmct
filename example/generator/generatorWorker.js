@@ -326,7 +326,7 @@
     });
   }
 
-  self.onmessage = function handleMessage(event) {
+  function handleMessage(event) {
     var message = event.data;
     var handler = handlers[message.request];
 
@@ -334,10 +334,63 @@
       sendError(new Error('unknown message type'), message);
     } else {
       try {
+        if (activeTimeouts[message.id]) {
+          clearTimeout(activeTimeouts[message.id]);
+        }
+
+        if (message.request === 'subscribe') {
+          var data = message.data;
+          var step = 1000 / data.dataRateInHz;
+          var currentPointTime = Date.now();
+
+          function streamLoop() {
+            var now = Date.now();
+            currentPointTime = getMonotonicTimestamp(Math.max(currentPointTime + 1, now));
+
+            self.postMessage({
+              id: message.id,
+              data: {
+                name: data.name,
+                utc: currentPointTime,
+                yesterday: currentPointTime - 60 * 60 * 24 * 1000,
+                sin: sin(
+                  currentPointTime,
+                  data.period,
+                  data.amplitude,
+                  data.offset,
+                  data.phase,
+                  data.randomness,
+                  data.infinityValues,
+                  data.exceedFloat32
+                ),
+                wavelengths: wavelengths(),
+                intensities: intensities(),
+                cos: cos(
+                  currentPointTime,
+                  data.period,
+                  data.amplitude,
+                  data.offset,
+                  data.phase,
+                  data.randomness,
+                  data.infinityValues,
+                  data.exceedFloat32
+                )
+              }
+            });
+
+            activeTimeouts[message.id] = setTimeout(streamLoop, step);
+          }
+
+          streamLoop();
+          return;
+        }
+
         handler(message);
       } catch (e) {
         sendError(e, message);
       }
     }
-  };
+  }
+
+  self.addEventListener('message', handleMessage);
 })();
