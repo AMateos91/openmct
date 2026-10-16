@@ -62,67 +62,66 @@
 
   function onSubscribe(message) {
     var data = message.data;
-    var step = 1000 / data.dataRateInHz;
-    var currentPointTime = Date.now();
 
-    if (activeTimeouts[message.id]) {
-      clearTimeout(activeTimeouts[message.id]);
-    }
+    var start = Date.now();
+    var step = 1000 / data.dataRateInHz;
+    var nextStep = start - (start % step) + step;
 
     if (data.spectra) {
-      var nextStep = currentPointTime - (currentPointTime % step) + step;
-      var work = function (now) {
+      function workSpectra(now) {
         while (nextStep < now) {
-          var messageCopy = Object.create(message);
+          const messageCopy = Object.create(message);
           message.data.start = nextStep - 60 * 1000;
           message.data.end = nextStep;
           onRequest(messageCopy);
           nextStep += step;
         }
+
         return nextStep;
-      };
-      subscriptions[message.id] = work;
+      }
+      subscriptions[message.id] = workSpectra;
       workSubscriptions();
     } else {
-      function streamLoop() {
-        var now = Date.now();
-        currentPointTime = getMonotonicTimestamp(Math.max(currentPointTime + 1, now));
+      function workTelemetry(now) {
+        while (nextStep < now) {
+          var monotonicTime = getMonotonicTimestamp(nextStep);
+          self.postMessage({
+            id: message.id,
+            data: {
+              name: data.name,
+              utc: monotonicTime,
+              yesterday: monotonicTime - 60 * 60 * 24 * 1000,
+              sin: sin(
+                monotonicTime,
+                data.period,
+                data.amplitude,
+                data.offset,
+                data.phase,
+                data.randomness,
+                data.infinityValues,
+                data.exceedFloat32
+              ),
+              wavelengths: wavelengths(),
+              intensities: intensities(),
+              cos: cos(
+                monotonicTime,
+                data.period,
+                data.amplitude,
+                data.offset,
+                data.phase,
+                data.randomness,
+                data.infinityValues,
+                data.exceedFloat32
+              )
+            }
+          });
+          nextStep += step;
+        }
 
-        self.postMessage({
-          id: message.id,
-          data: {
-            name: data.name,
-            utc: currentPointTime,
-            yesterday: currentPointTime - 60 * 60 * 24 * 1000,
-            sin: sin(
-              currentPointTime,
-              data.period,
-              data.amplitude,
-              data.offset,
-              data.phase,
-              data.randomness,
-              data.infinityValues,
-              data.exceedFloat32
-            ),
-            wavelengths: wavelengths(),
-            intensities: intensities(),
-            cos: cos(
-              currentPointTime,
-              data.period,
-              data.amplitude,
-              data.offset,
-              data.phase,
-              data.randomness,
-              data.infinityValues,
-              data.exceedFloat32
-            )
-          }
-        });
-
-        activeTimeouts[message.id] = setTimeout(streamLoop, step);
+        return nextStep;
       }
-
-      streamLoop();
+      subscriptions[message.id] = workTelemetry;
+      workSubscriptions();
     }
   }
 

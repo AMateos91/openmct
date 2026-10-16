@@ -178,9 +178,16 @@ export default {
 
         this.config = config;
         this.hideYAxisWhenSmall = this.yAxis.get('hideYAxisWhenSmall') || false;
-        this.listenTo(this.yAxis, 'change:hideYAxisWhenSmall', (newValue) => {
-          this.hideYAxisWhenSmall = newValue;
-        }, this);
+        /* eslint-disable prettier/prettier */
+        this.listenTo(
+          this.yAxis,
+          'change:hideYAxisWhenSmall',
+          (newValue) => {
+            this.hideYAxisWhenSmall = newValue;
+          },
+          this
+        );
+        /* eslint-enable prettier/prettier */
 
         this.listenTo(this.config.series, 'add', this.addSeries, this);
         this.listenTo(this.config.series, 'remove', this.seriesRemovedFromPlot, this);

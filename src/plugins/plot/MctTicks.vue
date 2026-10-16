@@ -90,28 +90,6 @@ import {
   toTick
 } from './tickUtils.js';
 
-function filterSmallPlotTicks(ticks, minSpacingPixels = 20) {
-  if (!ticks || ticks.length <= 2) {
-    return ticks;
-  }
-
-  const first = ticks[0];
-  const last = ticks[ticks.length - 1];
-
-  const midIndex = Math.floor(ticks.length / 2);
-  const middle = ticks[midIndex];
-
-  const overrunsLower = Math.abs(middle.position - first.position) < minSpacingPixels;
-  const overrunsUpper = Math.abs(last.position - middle.position) < minSpacingPixels;
-
-  if (overrunsLower || overrunsUpper) {
-    return [first, last];
-  }
-
-  return [first, middle, last];
-}
-
-
 export default {
   inject: ['openmct', 'domainObject', 'objectPath'],
   props: {
@@ -175,27 +153,27 @@ export default {
      */
     labelledTicks() {
       const rawLabels = this.ticks.filter((tick) => !tick.minor);
-      
       if (!rawLabels || rawLabels.length <= 2) {
         return rawLabels;
       }
 
       const minSpacingPixels = 20;
-      const first = rawLabels[0];
-      const last = rawLabels[rawLabels.length - 1];
-      const midIndex = Math.floor(rawLabels.length / 2);
-      const middle = rawLabels[midIndex];
+      const firstBound = rawLabels[0];
+      const lastBound = rawLabels[rawLabels.length - 1];
+      const midPointIndex = Math.floor(rawLabels.length / 2);
+      const midTick = rawLabels[midPointIndex];
 
-      const overrunsLower = Math.abs(middle.position - first.position) < minSpacingPixels;
-      const overrunsUpper = Math.abs(last.position - middle.position) < minSpacingPixels;
+      const overrunsLower = Math.abs(midTick.position - firstBound.position) < minSpacingPixels;
+      const overrunsUpper = Math.abs(lastBound.position - midTick.position) < minSpacingPixels;
 
       if (overrunsLower || overrunsUpper) {
-        return [first, last];
+        return [firstBound, lastBound];
       }
 
-      return [first, middle, last];
+      return [firstBound, midTick, lastBound];
     }
   },
+
   mounted() {
     eventHelpers.extend(this);
 
