@@ -73,7 +73,7 @@
       var nextStep = currentPointTime - (currentPointTime % step) + step;
       var work = function (now) {
         while (nextStep < now) {
-          const messageCopy = Object.create(message);
+          var messageCopy = Object.create(message);
           message.data.start = nextStep - 60 * 1000;
           message.data.end = nextStep;
           onRequest(messageCopy);
