@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 import { EventEmitter } from 'eventemitter3';
+
 import PRIORITIES from '../../api/priority/PriorityAPI';
 
 /**
