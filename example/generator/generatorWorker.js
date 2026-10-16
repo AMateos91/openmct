@@ -83,7 +83,11 @@
       workSubscriptions();
     } else {
       function workTelemetry(now) {
-        while (nextStep < now) {
+        // PROTECTION: Prevent CPU starvation and infinite loops inside headless CI servers
+        var maxIterations = 500;
+        var iterations = 0;
+
+        while (nextStep < now && iterations < maxIterations) {
           var monotonicTime = getMonotonicTimestamp(nextStep);
           self.postMessage({
             id: message.id,
@@ -115,8 +119,8 @@
               )
             }
           });
-
           nextStep += step;
+          iterations++;
         }
 
         return nextStep;
