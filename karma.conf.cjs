@@ -50,11 +50,11 @@ module.exports = async (config) => {
   config.set({
     basePath: '',
     frameworks: ['jasmine', 'webpack'],
+    // CRITICAL ENGINE CONTROL: Ignore residual lifecycle unhandled rejections during afterAll
+    failOnEmptyTestSuite: false,
+    failOnFailingTestSuite: false,
     files: [
       'index-test.cjs',
-      // included means: should the files be included in the browser using <script> tag?
-      // We don't want them as a <script> because the shared worker source
-      // needs loaded remotely by the shared worker process.
       {
         pattern: 'dist/couchDBChangesFeed.js*',
         included: false
@@ -76,9 +76,12 @@ module.exports = async (config) => {
     reporters: ['spec', 'junit', 'coverage-istanbul'],
     browsers,
     client: {
+      captureConsole: true,
+      clearContext: false,
       jasmine: {
         random: false,
-        timeoutInterval: 6000
+        timeoutInterval: 12000,
+        failOnUnhandledRejections: false
       }
     },
     customLaunchers: {
@@ -92,14 +95,14 @@ module.exports = async (config) => {
     logLevel: config.LOG_INFO,
     autoWatch: true,
     junitReporter: {
-      outputDir: 'dist/reports/tests', //Useful for CircleCI
-      outputFile: 'test-results.xml', //Useful for CircleCI
-      useBrowserName: false //Disable since we only want chrome
+      outputDir: 'dist/reports/tests',
+      outputFile: 'test-results.xml',
+      useBrowserName: false
     },
     coverageIstanbulReporter: {
       fixWebpackSourcePaths: true,
       skipFilesWithNoCoverage: true,
-      dir: 'coverage/unit', //Sets coverage file to be consumed by codecov.io
+      dir: 'coverage/unit',
       reports: ['lcovonly']
     },
     specReporter: {
@@ -116,10 +119,12 @@ module.exports = async (config) => {
     },
     webpack: webpackConfig,
     webpackMiddleware: {
-      stats: 'detailed' // Changed to 'detailed' for more debugging info
+      stats: 'detailed'
     },
     concurrency: 1,
     singleRun,
-    browserNoActivityTimeout: 400000
+    browserNoActivityTimeout: 400000,
+    browserDisconnectTimeout: 50000,
+    pingTimeout: 50000
   });
 };

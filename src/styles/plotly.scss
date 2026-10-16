@@ -72,13 +72,35 @@
       font-size: 12px !important;
     }
   }
+
+  /* ==========================================================================
+     ENHANCEMENT #8454: Progressive Tick Reduction for Small Plots via CSS
+     ========================================================================== */
+
+  @media (max-height: 250px) {
+    .ytick:not(:first-of-type):not(:last-of-type) {
+      display: none !important;
+    }
+  }
+
+  @media (min-height: 251px) and (max-height: 400px) {
+    .ytick {
+      display: none;
+    }
+
+    .ytick:first-of-type,
+    .ytick:last-of-type,
+    .ytick:nth-of-type(3) {
+      display: block !important;
+    }
+  }
 }
 
 .c-plot.--width-less-than-600 {
   &.has-hide-y-small {
     .plot-container.plotly {
-      .ytick, 
-      .yaxislayer, 
+      .ytick,
+      .yaxislayer,
       .main-svg .yaxis {
         display: none !important;
       }

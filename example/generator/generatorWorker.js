@@ -83,41 +83,40 @@
       workSubscriptions();
     } else {
       function workTelemetry(now) {
-        while (nextStep < now) {
-          var monotonicTime = getMonotonicTimestamp(nextStep);
-          self.postMessage({
-            id: message.id,
-            data: {
-              name: data.name,
-              utc: monotonicTime,
-              yesterday: monotonicTime - 60 * 60 * 24 * 1000,
-              sin: sin(
-                monotonicTime,
-                data.period,
-                data.amplitude,
-                data.offset,
-                data.phase,
-                data.randomness,
-                data.infinityValues,
-                data.exceedFloat32
-              ),
-              wavelengths: wavelengths(),
-              intensities: intensities(),
-              cos: cos(
-                monotonicTime,
-                data.period,
-                data.amplitude,
-                data.offset,
-                data.phase,
-                data.randomness,
-                data.infinityValues,
-                data.exceedFloat32
-              )
-            }
-          });
-          nextStep += step;
-        }
+        var monotonicTime = getMonotonicTimestamp(now);
 
+        self.postMessage({
+          id: message.id,
+          data: {
+            name: data.name,
+            utc: monotonicTime,
+            yesterday: monotonicTime - 60 * 60 * 24 * 1000,
+            sin: sin(
+              monotonicTime,
+              data.period || 60000,
+              data.amplitude || 1,
+              data.offset || 0,
+              data.phase || 0,
+              data.randomness || 0,
+              data.infinityValues,
+              data.exceedFloat32
+            ),
+            wavelengths: wavelengths(),
+            intensities: intensities(),
+            cos: cos(
+              monotonicTime,
+              data.period || 60000,
+              data.amplitude || 1,
+              data.offset || 0,
+              data.phase || 0,
+              data.randomness || 0,
+              data.infinityValues,
+              data.exceedFloat32
+            )
+          }
+        });
+
+        nextStep = now + step;
         return nextStep;
       }
       subscriptions[message.id] = workTelemetry;
@@ -289,7 +288,6 @@
 
   function getRandomFloat32OverflowValue() {
     const sign = Math.random() > 0.5 ? 1 : -1;
-
     return sign * 3.4e39;
   }
 
@@ -301,7 +299,6 @@
         values.push(String(randomValue));
       }
     }
-
     return values;
   }
 
@@ -313,7 +310,6 @@
         values.push(String(randomValue));
       }
     }
-
     return values;
   }
 
@@ -333,63 +329,12 @@
       sendError(new Error('unknown message type'), message);
     } else {
       try {
-        if (activeTimeouts[message.id]) {
-          clearTimeout(activeTimeouts[message.id]);
-        }
-
-        if (message.request === 'subscribe') {
-          var data = message.data;
-          var step = 1000 / data.dataRateInHz;
-          var currentPointTime = Date.now();
-
-          function streamLoop() {
-            var now = Date.now();
-            currentPointTime = getMonotonicTimestamp(Math.max(currentPointTime + 1, now));
-
-            self.postMessage({
-              id: message.id,
-              data: {
-                name: data.name,
-                utc: currentPointTime,
-                yesterday: currentPointTime - 60 * 60 * 24 * 1000,
-                sin: sin(
-                  currentPointTime,
-                  data.period,
-                  data.amplitude,
-                  data.offset,
-                  data.phase,
-                  data.randomness,
-                  data.infinityValues,
-                  data.exceedFloat32
-                ),
-                wavelengths: wavelengths(),
-                intensities: intensities(),
-                cos: cos(
-                  currentPointTime,
-                  data.period,
-                  data.amplitude,
-                  data.offset,
-                  data.phase,
-                  data.randomness,
-                  data.infinityValues,
-                  data.exceedFloat32
-                )
-              }
-            });
-
-            activeTimeouts[message.id] = setTimeout(streamLoop, step);
-          }
-
-          streamLoop();
-          return;
-        }
-
         handler(message);
-      } catch (e) {
-        sendError(e, message);
+      } catch (error) {
+        sendError(error, message);
       }
     }
   }
 
-  self.onmessage = handleMessage;
+  self.addEventListener('message', handleMessage);
 })();

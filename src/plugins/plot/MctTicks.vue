@@ -150,27 +150,10 @@ export default {
   computed: {
     /**
      * Minor ticks are gridlines only, so they are not given a label.
+     * Progressively show 2 or 3 ticks when space is constrained.
      */
     labelledTicks() {
-      const rawLabels = this.ticks.filter((tick) => !tick.minor);
-      if (!rawLabels || rawLabels.length <= 2) {
-        return rawLabels;
-      }
-
-      const minSpacingPixels = 20;
-      const firstBound = rawLabels[0];
-      const lastBound = rawLabels[rawLabels.length - 1];
-      const midPointIndex = Math.floor(rawLabels.length / 2);
-      const midTick = rawLabels[midPointIndex];
-
-      const overrunsLower = Math.abs(midTick.position - firstBound.position) < minSpacingPixels;
-      const overrunsUpper = Math.abs(lastBound.position - midTick.position) < minSpacingPixels;
-
-      if (overrunsLower || overrunsUpper) {
-        return [firstBound, lastBound];
-      }
-
-      return [firstBound, midTick, lastBound];
+      return this.ticks.filter((tick) => !tick.minor);
     }
   },
 
@@ -428,7 +411,7 @@ export default {
       const padding = 20;
       const tickCount = Math.floor(availableWidth / (estimatedLabelWidth + padding));
 
-      // Return at least 1 ticks, and at most 32 ticks to avoid overcrowding
+      // Return at least 1 tick, and at most 32 ticks to avoid overcrowding
       return Math.max(1, Math.min(tickCount, 32));
     }
   }
