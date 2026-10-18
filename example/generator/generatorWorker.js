@@ -163,7 +163,6 @@
       for (let cycle = 0; cycle < totalCycles; cycle++) {
         let cycleStart = start + (duration / totalCycles) * cycle;
 
-        // SOLUCIÓN: Usar el tiempo original del ciclo en vez de corromperlo con getMonotonicTimestamp
         let minPointTime = cycleStart;
         let maxPointTime = cycleStart + period / 2;
 
@@ -171,7 +170,6 @@
       }
     } else {
       for (let i = 0; i < maxPoints && nextStep < end; i++, nextStep += step) {
-        // SOLUCIÓN: Mantener el paso de tiempo histórico exacto
         data.push(createDataPoint(nextStep, request));
       }
     }
