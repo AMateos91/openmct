@@ -82,9 +82,6 @@
       subscriptions[message.id] = workSpectra;
       workSubscriptions();
     } else {
-
-      var step = 1000 / data.dataRateInHz;
-
       function workTelemetry(now) {
         var monotonicTime = getMonotonicTimestamp(now);
 
@@ -104,8 +101,8 @@
               data.infinityValues,
               data.exceedFloat32
             ),
-            wavelengths: ["12.3", "45.6", "78.9", "23.4", "56.7"],
-            intensities: ["1.2", "3.4", "5.6", "7.8", "9.0"],
+            wavelengths: ['12.3', '45.6', '78.9', '23.4', '56.7'],
+            intensities: ['1.2', '3.4', '5.6', '7.8', '9.0'],
             cos: cos(
               monotonicTime,
               data.period || 60000,
@@ -190,7 +187,6 @@
     }
   }
 
-
   function createDataPoint(time, request) {
     return {
       utc: time,
@@ -225,13 +221,13 @@
       id: message.id,
       data: request.spectra
         ? {
-          wavelength: data.map((item) => {
-            return item.wavelength;
-          }),
-          cos: data.map((item) => {
-            return item.cos;
-          })
-        }
+            wavelength: data.map((item) => {
+              return item.wavelength;
+            }),
+            cos: data.map((item) => {
+              return item.cos;
+            })
+          }
         : data
     });
   }

@@ -161,11 +161,10 @@ export default {
     this.setUpYAxisOptions();
   },
   beforeUnmount() {
-    
     if (typeof this.stopListening === 'function') {
       this.stopListening();
     }
- 
+
     if (this.seriesModels) {
       this.seriesModels.forEach((series) => {
         if (typeof this.stopListening === 'function') {
