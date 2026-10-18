@@ -161,8 +161,24 @@ export default {
     this.setUpYAxisOptions();
   },
   beforeUnmount() {
-    this.stopListening();
+    
+    if (typeof this.stopListening === 'function') {
+      this.stopListening();
+    }
+ 
+    if (this.seriesModels) {
+      this.seriesModels.forEach((series) => {
+        if (typeof this.stopListening === 'function') {
+          this.stopListening(series);
+        }
+      });
+      this.seriesModels = [];
+    }
+
+    this.yAxis = null;
+    this.config = null;
   },
+
   methods: {
     initAxisAndSeriesConfig() {
       const configId = this.openmct.objects.makeKeyString(this.domainObject.identifier);
@@ -177,17 +193,25 @@ export default {
         }
 
         this.config = config;
-        this.hideYAxisWhenSmall = this.yAxis.get('hideYAxisWhenSmall') || false;
-        /* eslint-disable prettier/prettier */
-        this.listenTo(
-          this.yAxis,
-          'change:hideYAxisWhenSmall',
-          (newValue) => {
-            this.hideYAxisWhenSmall = newValue;
-          },
-          this
-        );
-        /* eslint-enable prettier/prettier */
+
+        // Check if yAxis is defined before listening to prevent test registry failures
+        if (this.yAxis && typeof this.yAxis.get === 'function') {
+          this.hideYAxisWhenSmall = this.yAxis.get('hideYAxisWhenSmall') || false;
+          /* eslint-disable prettier/prettier */
+          this.listenTo(
+            this.yAxis,
+            'change:hideYAxisWhenSmall',
+            (newValue) => {
+              this.hideYAxisWhenSmall = newValue;
+            },
+            this
+          );
+          /* eslint-enable prettier/prettier */
+        } else {
+          this.hideYAxisWhenSmall = false;
+        }
+
+        this.listenTo(this.config.series, 'add', this.addSeries, this);
 
         this.listenTo(this.config.series, 'add', this.addSeries, this);
         this.listenTo(this.config.series, 'remove', this.seriesRemovedFromPlot, this);

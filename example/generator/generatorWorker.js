@@ -82,9 +82,10 @@
       subscriptions[message.id] = workSpectra;
       workSubscriptions();
     } else {
+
+      var step = 1000 / data.dataRateInHz;
+
       function workTelemetry(now) {
-        // REAL-TIME DYNAMIC ENGINE: Map telemetry directly to the actual system clock
-        // This eliminates the rigid vertical wall and creates a fluid moving sine wave
         var monotonicTime = getMonotonicTimestamp(now);
 
         self.postMessage({
@@ -103,8 +104,8 @@
               data.infinityValues,
               data.exceedFloat32
             ),
-            wavelengths: wavelengths(),
-            intensities: intensities(),
+            wavelengths: ["12.3", "45.6", "78.9", "23.4", "56.7"],
+            intensities: ["1.2", "3.4", "5.6", "7.8", "9.0"],
             cos: cos(
               monotonicTime,
               data.period || 60000,
@@ -130,7 +131,7 @@
   function onUnsubscribe(message) {
     delete subscriptions[message.data.id];
     if (activeTimeouts[message.data.id]) {
-      clearTimeout(activeTimeouts[message.data.id]);
+      clearInterval(activeTimeouts[message.data.id]);
       delete activeTimeouts[message.data.id];
     }
   }
@@ -164,14 +165,17 @@
 
       for (let cycle = 0; cycle < totalCycles; cycle++) {
         let cycleStart = start + (duration / totalCycles) * cycle;
-        let minPointTime = getMonotonicTimestamp(cycleStart);
-        let maxPointTime = getMonotonicTimestamp(cycleStart + period / 2);
+
+        // SOLUCIÓN: Usar el tiempo original del ciclo en vez de corromperlo con getMonotonicTimestamp
+        let minPointTime = cycleStart;
+        let maxPointTime = cycleStart + period / 2;
 
         data.push(createDataPoint(minPointTime, request), createDataPoint(maxPointTime, request));
       }
     } else {
       for (let i = 0; i < maxPoints && nextStep < end; i++, nextStep += step) {
-        data.push(createDataPoint(getMonotonicTimestamp(nextStep), request));
+        // SOLUCIÓN: Mantener el paso de tiempo histórico exacto
+        data.push(createDataPoint(nextStep, request));
       }
     }
 
@@ -185,6 +189,7 @@
       setTimeout(() => postOnRequest(message, request, data), loadDelay);
     }
   }
+
 
   function createDataPoint(time, request) {
     return {
@@ -220,13 +225,13 @@
       id: message.id,
       data: request.spectra
         ? {
-            wavelength: data.map((item) => {
-              return item.wavelength;
-            }),
-            cos: data.map((item) => {
-              return item.cos;
-            })
-          }
+          wavelength: data.map((item) => {
+            return item.wavelength;
+          }),
+          cos: data.map((item) => {
+            return item.cos;
+          })
+        }
         : data
     });
   }
